@@ -91,7 +91,8 @@ $ sudo reboot now
 ## Edit Python script from Windows
 
 An easy way to edit and develop the script is to use a Samba fileshare. 
-With Samba set up: https://blogs.msdn.microsoft.com/mustafakasap/2016/02/04/py-01-visual-studio-publish-python-script-on-a-unix-machine-remote-debug/
+
+Full setup instructions: https://blogs.msdn.microsoft.com/mustafakasap/2016/02/04/py-01-visual-studio-publish-python-script-on-a-unix-machine-remote-debug/
 
 ```
 $ sudo apt-get install samba samba-common-bin
@@ -116,11 +117,11 @@ public=yes
 
 ## Known issues
 
-* Should show nicer error message if no real time data is available from the service, or if the lines are not currently active (e.g., during the night). 
+- Should show nicer error message if no real time data is available from the service, or if the lines are not currently active (e.g., during the night). 
 
 
 ## Further Coding Instructions
 
-Adafruit LCD panel: https://github.com/adafruit/Adafruit_Python_CharLCD
-WL-Monitor-Pi original Python script: https://github.com/mabe-at/WL-Monitor-Pi
+- Adafruit LCD panel: https://github.com/adafruit/Adafruit_Python_CharLCD
+- WL-Monitor-Pi original Python script: https://github.com/mabe-at/WL-Monitor-Pi
 
