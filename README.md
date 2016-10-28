@@ -16,6 +16,21 @@ Uses [open data](https://www.data.gv.at/katalog/dataset/add66f20-d033-4eee-b9a0-
 Code is based on [WL-Monitor-Pi](https://github.com/mabe-at/WL-Monitor-Pi) from Matthias Bendel / [mabe-at](https://mabe.at) and released under the same MIT license - thanks for creating the original project and inspiring this adaption!
 
 
+## Photos
+
+Departure monitor in action, showing real-time coutdown for two different directions of a bus line in Vienna:
+
+![](https://raw.githubusercontent.com/andijakl/raspberry-pi-public-transport/master/photos/Raspi-Departures.jpg)
+
+Errors with the connection or the service are shown in red:
+
+![](https://raw.githubusercontent.com/andijakl/raspberry-pi-public-transport/master/photos/Raspi-Error.jpg)
+
+The Adafruit LCD display needs to be assembled manually:
+
+![](https://raw.githubusercontent.com/andijakl/raspberry-pi-public-transport/master/photos/Adafruit-Assembly.jpg)
+
+
 ## Preparation
 
 The project requires:
