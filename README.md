@@ -7,12 +7,13 @@ Minimize the waiting time at bus / tram / subway stops by knowing when to leave 
 Features:
 
 - Shows the next two departures for two different public transport stops / lines
-- Refreshes countdown every 20 seconds
+- Refreshes countdown every 10 seconds (automatically halves refresh rate in case of the first 20 errors)
 - Auto-starts when booting your Raspberry Pi
 - Configurable through command line parameters
 - Shows live data in green, errors in red
 
-Uses [open data](https://www.data.gv.at/katalog/dataset/add66f20-d033-4eee-b9a0-47019828e698) from the City of Vienna.
+Data source: Uses [open data](https://www.data.gv.at/katalog/dataset/add66f20-d033-4eee-b9a0-47019828e698) from the City of Vienna.
+
 Code is based on [WL-Monitor-Pi](https://github.com/mabe-at/WL-Monitor-Pi) from Matthias Bendel / [mabe-at](https://mabe.at) and released under the same MIT license - thanks for creating the original project and inspiring this adaption!
 
 
@@ -52,14 +53,20 @@ Start the script on your Raspberry Pi:
 $ python monitor.py -k <API-key> <rbl-1> <rbl-2>
 ```
 
-If valid real time data can be retrieved, the real-time countdown is shown in green. If there was an error retrieving data from the web service, the display will turn red to inform you the visible data is a bit older. After the second failed attempt in a row, the display shows the exception message on the display so that you know if it is a network or service issue.
+If valid real time data can be retrieved, the real-time countdown is shown in green. It is recommended to supply two RBL IDs; each RBL will get one line in the two-line LCD panel. However, the script also works if only one RBL ID is supplied.
 
-The refresh rate can be configured in the script. By default it is set to 20 seconds. For the first twenty consecutive errors, the retry time is halved (= 10 seconds) to resolve the issue more quickly in case of a temporary network or service issue.
+By default, the script shows the next two departure countdowns for each RBL. In case there is currently no available countdown for the line, the script will show 'N/A'.
+
+If there was an error retrieving data from the web service, the display will turn red to inform you the visible data is a bit older. After the second failed attempt in a row, the display shows the exception message on the display so that you know if it is a network or service issue.
+
+The refresh rate can be configured in the script or as optional parameter (-t <seconds>). By default it is set to 10 seconds. For the first twenty consecutive errors, the retry time is halved (= 5 seconds) to resolve the issue more quickly in case of a temporary network or service issue.
+
+To issue a refresh immediately, press the DOWN button on the LCD pad for one second. The screen will briefly turn yellow to let you know the command was registered.
 
 
 ## Exiting the app
 
-Exit the running app by pressing and holding select button on the keypad of the Adafruit LCD board (left most) for up to 10 secs. The display will be turned off and the script exits.
+Exit the running app by pressing and holding the SELECT button (left most) on the keypad of the Adafruit LCD board for one second. The display will be turned off and the script exits.
 
 
 ## Autostart the app
@@ -117,7 +124,7 @@ public=yes
 
 ## Known issues
 
-- Should show nicer error message if no real time data is available from the service, or if the lines are not currently active (e.g., during the night). 
+- Should show nicer error message if no real time data is available from the service.
 
 
 ## Further Coding Instructions
