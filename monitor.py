@@ -10,6 +10,14 @@ import Adafruit_CharLCD as LCD
 #import ptvsd
 #ptvsd.enable_attach('wlmonitor')
 
+
+# Best departure time (minutes) for primary RBL, will be shown in green
+bestMinutes = [3, 4];
+# Medium departure times (minutes) for primary RBL, will be shown in yellow
+mediumMinutes = [2, 5];
+# All other departure times will be shown in red.
+# Errors shown in blue.
+
 reload(sys)
 sys.setdefaultencoding('latin1')
 
@@ -24,6 +32,7 @@ class RBL:
 	direction = ''
 	time1 = "N/A"
 	time2 = None
+	time3 = None
 
 def replaceUmlaut(s):
 	s = s.replace(chr(196), "Ae") # A umlaut
@@ -40,6 +49,7 @@ def main(argv):
 	global lcd 
 	lcd = LCD.Adafruit_CharLCDPlate()
 	lcd.enable_display(True)
+	# Set LCD color to blue while initializing
 	lcd.set_color(0.0, 0.0, 1.0)
 	lcd.set_backlight(1.0)
 	lcd.clear()
@@ -50,10 +60,10 @@ def main(argv):
 	# Sleep time in seconds - wait time between requests
 	# (note: uses half the time in case of a retry for an error)
 	st = 10
-	
+	primaryRbl = 0
 
 	try:                                
-		opts, args = getopt.getopt(argv, "hk:t:", ["help", "key=", "time="])
+		opts, args = getopt.getopt(argv, "hk:t:p:", ["help", "key=", "time=", "primary="])
 	except getopt.GetoptError:          
 		usage()                         
 		sys.exit(2)                     
@@ -63,6 +73,9 @@ def main(argv):
 			sys.exit()                                    
 		elif opt in ("-k", "--key"):
 			apikey = arg
+		elif opt in ("-p", "--primary"):
+			primaryRbl = arg
+			print('primary RBL number: ' + primaryRbl);
 		elif opt in ("-t", "--time"):
 			try:
 				tmpst = int(arg)
@@ -98,7 +111,7 @@ def main(argv):
 				rjson = r.json()
 				# Demo data for debugging
 				#rjson = json.loads('{"data":{"monitors":[{"locationStop":{"type":"Feature","geometry":{"type":"Point","coordinates":[16.3691011072259,48.1785633982113]},"properties":{"name":"60200286","title":"Erlachplatz","municipality":"Wien","municipalityId":90001,"type":"stop","coordName":"WGS84","attributes":{"rbl":759}}},"lines":[{"name":"14A","towards":"Reumannplatz U","direction":"H","richtungsId":"1","barrierFree":true,"realtimeSupported":true,"trafficjam":false,"departures":{"departure":[{"departureTime":{"timePlanned":"2016-10-28T23:44:00.000+0200","timeReal":"2016-10-28T23:45:58.000+0200","countdown":8}}]},"type":"ptBusCity","lineId":414}],"attributes":{}}]},"message":{"value":"OK","messageCode":1,"serverTime":"2016-10-28T23:37:11.924+0200"}}');
-				handleWlResponse(rjson, rbls);
+				handleWlResponse(rjson, rbls, primaryRbl);
 			else:
 				handleError("Bad response: " + str(r.status_code));
 		except Exception as e:
@@ -117,12 +130,12 @@ def main(argv):
 			
 	print ('Out of loop!')
 
-def handleWlResponse(rjson, rbls):
+def handleWlResponse(rjson, rbls, primaryRbl):
 	global exCount;
 	# Check if we got lines at all
 	numReturnedLines = len(rjson['data']['monitors']);
 	if (numReturnedLines < 1):
-		handleError("Response contains no lines");
+		handleError("Currently no departures");
 	else:
 		# Reset RBL departure data
 		for curSavedRbl in rbls:
@@ -140,9 +153,8 @@ def handleWlResponse(rjson, rbls):
 					rbls[rblIdx] = parsedRbl;
 					break;
 			
-		# Show successful info on LCD
-		lcd.set_color(0.0, 1.0, 0.0);
 		lcdShow(rbls);
+		setColorForDepartures(rbls, primaryRbl);
 		exCount = 0;
 	
 		
@@ -160,8 +172,8 @@ def handleError(e):
 	global lcd;
 	global exCount;
 	exCount+=1;
-	# Set screen to red in any case to indicate issues
-	lcd.set_color(1.0, 0.0, 0.0)
+	# Set screen to blue in any case to indicate issues
+	lcd.set_color(0.0, 0.0, 1.0)
 	print( "Error: " + repr(e) )
 	if (exCount >= 2):
 		# More than two errors after each other? Show error message to user.
@@ -179,7 +191,8 @@ def parseRbl(rjson):
 	# Try to get countdown values
 	try:
 		tmprbl.time1 = rjson['lines'][0]['departures']['departure'][0]['departureTime']['countdown'];
-		tmprbl.time2 = rjson['lines'][0]['departures']['departure'][1]['departureTime']['countdown']
+		tmprbl.time2 = rjson['lines'][0]['departures']['departure'][1]['departureTime']['countdown'];
+		tmprbl.time3 = rjson['lines'][0]['departures']['departure'][2]['departureTime']['countdown'];
 	except IndexError:
 		print("Index not found when parsing time from JSON - at least one countdown not available");
 	return tmprbl;
@@ -216,6 +229,34 @@ def lcdShow(rbls):
 	
 	lcd.message(msg);
 
+def setColorForDepartures(rbls,primaryRbl):
+	global lcd;
+	
+	if primaryRbl == None or primaryRbl == 0:
+		# No primary RBL defined - set color to green (default)
+		lcd.set_color(0.0, 1.0, 0.0)
+		return;
+		
+	
+	# Search if we have departure data for the primary RBL ID
+	for curRbl in rbls:
+		if int(curRbl.id) == int(primaryRbl):			
+			# Check if one of the departure times is one of the best possible
+			for depTime in range(len(bestMinutes)):
+				if type(curRbl.time1) is int and int(curRbl.time1) == bestMinutes[depTime] or type(curRbl.time2) is int and int(curRbl.time2) == bestMinutes[depTime] or type(curRbl.time3) is int and int(curRbl.time3) == bestMinutes[depTime]:
+					lcd.set_color(0.0, 1.0, 0.0)
+					return;					
+			
+			# Check if one of the departure times is one of the medium times
+			for depTime in range(len(mediumMinutes)):
+				if type(curRbl.time1) is int and int(curRbl.time1) == mediumMinutes[depTime] or type(curRbl.time2) is int and int(curRbl.time2) == mediumMinutes[depTime] or type(curRbl.time3) is int and int(curRbl.time3) == mediumMinutes[depTime]:
+					lcd.set_color(1.0, 1.0, 0.0)
+					return;
+			break;
+	
+	# No good departure time - set to red.
+	lcd.set_color(1.0, 0.0, 0.0);
+	
 # Insert a newline char into the string at the specified index
 def insertNewline(string, index):
     return string[:index] + '\n' + string[index:]
@@ -226,9 +267,10 @@ def dumpRBL(rbl):
 	print (str(rbl.time) + ' Min.')
 	
 def usage():
-	print ('usage: ' + __file__ + ' [-h] [-t time] -k apikey rbl [rbl ...]\n')
+	print ('usage: ' + __file__ + ' [-h] [-t time] -k apikey [-p rbl] rbl [rbl ...]\n')
 	print ('arguments:')
 	print ('  -k, --key=\tAPI key')
+	print ('  -p, --primary=\tPrimary RBL number')
 	print ('  rbl\t\tRBL number\n')
 	print ('optional arguments:')
 	print ('  -h, --help\tshow this help')
