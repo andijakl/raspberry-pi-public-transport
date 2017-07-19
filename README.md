@@ -10,7 +10,8 @@ Features:
 - Refreshes countdown every 10 seconds (automatically halves refresh rate in case of the first 20 errors)
 - Auto-starts when booting your Raspberry Pi
 - Configurable through command line parameters
-- Shows live data in green, errors in red
+- Configurable color coding for departure time: best time to leave for the public transport stop -> green display. Medium time -> yellow display. Bad time -> red display.
+- Errors shown in blue
 
 Data source: Uses [open data](https://www.data.gv.at/katalog/dataset/add66f20-d033-4eee-b9a0-47019828e698) from the City of Vienna.
 
@@ -50,14 +51,18 @@ The app shows departures for two stations & directions - these are called RBLs. 
 Start the script on your Raspberry Pi:
 
 ```
-$ python monitor.py -k <API-key> <rbl-1> <rbl-2>
+$ python monitor.py -k <API-key> [-p <primary-rbl>] <rbl-1> <rbl-2>
 ```
 
 If valid real time data can be retrieved, the real-time countdown is shown in green. It is recommended to supply two RBL IDs; each RBL will get one line in the two-line LCD panel. However, the script also works if only one RBL ID is supplied.
 
 By default, the script shows the next two departure countdowns for each RBL. In case there is currently no available countdown for the line, the script will show 'N/A'.
 
-If there was an error retrieving data from the web service, the display will turn red to inform you the visible data is a bit older. After the second failed attempt in a row, the display shows the exception message on the display so that you know if it is a network or service issue.
+The (optional) primary RBL has to be one of the two RBLs you supplied. The departure times of this RBL will be analyzed for the display color coding of the departure times. The script looks at the next three departures to see if one of those is in the ideal time window to leave your house.
+
+The best / medium minutes to leave the house can currently only be configured directly in the script (lines 15 / 17). Simply supply the countdown minutes for the best departure (= green display) and medium departure (= yellow display). All other departure times will be shown in red color. Default: countdown values of 3 and 4 are best (green). 2 and 5 are medium (yellow). All other countdown values cause the display to be shown in red.
+
+If there was an error retrieving data from the web service, the display will turn blue to inform you the visible data is a bit older. After the second failed attempt in a row, the display shows the exception message on the display so that you know if it is a network or service issue.
 
 The refresh rate can be configured in the script or as optional parameter (-t <seconds>). By default it is set to 10 seconds. For the first twenty consecutive errors, the retry time is halved (= 5 seconds) to resolve the issue more quickly in case of a temporary network or service issue.
 
@@ -80,7 +85,7 @@ $ nano launch_monitor.sh
 #!/bin/sh
 sleep 10
 cd /home/pi/WL-Monitor-Pi
-sudo python monitor.py -k <API-key> <rbl-1> <rbl-2>
+sudo python monitor.py -k <API-key> -p <primary-rbl> <rbl-1> <rbl-2>
 cd
 
 $ chmod 755 launch_monitor.sh
@@ -120,11 +125,6 @@ public=yes
 ```
 \\<ip address of your Raspberry Pi>\pythonapp
 ```
-
-
-## Known issues
-
-- Should show nicer error message if no real time data is available from the service.
 
 
 ## Further Coding Instructions
